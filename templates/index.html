@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Motor Control</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Motor Control Panel</h1>
+
+    <button id="flash">Flash</button>
+
+    <hr>
+
+    <h2>Feed</h2>
+    <button id="feed">Feed</button>
+    <input type="number" id="duration" placeholder="Timer (seconds)">
+
+    <script>
+        $("#flash").click(function(){
+            $.post("/flash");
+        });
+
+        $("#feed").click(function(){
+            const duration = $("#duration").val();
+            $.post("/feed", { duration });
+        });
+    </script>
+</body>
+</html>
