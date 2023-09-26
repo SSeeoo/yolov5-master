@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Realtime Graph</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div id="graph"></div>
+
+    <script>
+        function fetchAndPlotGraph() {
+            $.get('/get_graph_data', function(data) {
+                // Here, 'data' is the response from the server.
+                // You should convert this data to a format that Plotly can understand and plot the graph.
+                let graphData = convertDataToPlotlyFormat(data);
+                Plotly.newPlot('graph', graphData);
+            });
+        }
+
+        // Fetch and plot graph when the page loads
+        fetchAndPlotGraph();
+
+        // Set an interval to fetch and plot graph every 10 seconds
+        setInterval(fetchAndPlotGraph, 10000); // 10000 milliseconds = 10 seconds
+    </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Feeding Detection Graph</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <form id="breed-form">
+    {% for breed in breeds %}
+        <input type="checkbox" name="breed" value="{{ breed }}"> {{ breed }}<br>
+    {% endfor %}
+    </form>
+
+    <div id="graph-div">{{ graph_html|safe }}</div>
+    <div id="logs-container"></div>
+
+    <script>
+        function getAndDisplayData() {
+            let selectedBreeds = [];
+            $("#breed-form input[name='breed']:checked").each(function() {
+                selectedBreeds.push($(this).val());
+            });
+
+            // Update Graph
+            $.ajax({
+                type: 'POST',
+                url: '/get_graph_data',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({selected_breeds: selectedBreeds}),
+                success: function(response) {
+                    console.log(response); // 응답 로깅을 추가.
+                    if(response.status === 'success') {
+                        $('#graph-div').html(response.graph_html);
+                    } else {
+                        console.error('Error getting graph', response.message);
+                    }
+                },
+                error: function(error) {
+                    console.error('Error getting graph for breeds', error); // 이 부분도 로그를 출력하게 수정
+                }
+            });
+
+            // Update Logs
+            $.ajax({
+                type: 'POST',
+                url: '/get_logs_for_breeds',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({selected_breeds: selectedBreeds}),
+                success: function(response) {
+                    console.log(response); // 응답 로깅을 추가.
+                    if(response.status === 'success') {
+                        let logsHtml = '<table><tr><th>ID</th><th>Breed</th><th>Time</th></tr>';
+                        response.logs.forEach(log => {
+                            logsHtml += `<tr><td>${log.id}</td><td>${log.breed}</td><td>${log.time}</td></tr>`;
+                        });
+                        logsHtml += '</table>';
+                        $('#logs-container').html(logsHtml);
+                    } else {
+                        console.error('Error getting logs', response.message);
+                    }
+                },
+                error: function(error) {
+                    console.error('Error getting logs for breeds', error);
+                }
+            });
+        }
+
+        // 웹페이지 세부개발 후순위로
+// $(document).ready(function() {
+//     // 체크박스 상태 변경 이벤트 비활성화
+//     $("#breed-form input[name='breed']").off('change', getAndDisplayData);
+//
+//     // 페이지 로드 시 데이터 불러오기
+//     getAndDisplayData();
+//
+//     // 페이지 로드가 완료된 후에 체크박스 상태 변경 이벤트 다시 활성화
+//     setTimeout(function() {
+//         $("#breed-form input[name='breed']").on('change', getAndDisplayData);
+//     }, 100); // 100ms 후에 이벤트 활성화
+// });
+
+    </script>
+</body>
+</html>
