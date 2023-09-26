@@ -1,4 +1,5 @@
-# YOLOv5 🚀 by Ultralytics, AGPL-3.0 license
+# detect.py
+
 """
 Run YOLOv5 detection inference on images, videos, directories, globs, YouTube, webcam, streams, etc.
 
@@ -37,23 +38,10 @@ from pathlib import Path
 import torch
 import cv2
 import time
-
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FPS, 20)
-fps = int(cap.get(5))
-print("fps:", fps)
-
-while(cap.isOpened()):
-
-    ret,frame = cap.read()
-    if not ret:
-        break
-
-    cv2.imshow('frame', frame)
-
-    k = cv2.waitKey(1)
-    if k == 27:
-        break
+import numpy as np
+import requests
+import re
+import subprocess
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -188,8 +176,11 @@ def run(
 
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
+                        breed_name = names[c]  # 탐지된 품종의 이름
+                        print(f"Detected breed: {breed_name}")  # 추가된 코드
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
+
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
@@ -234,7 +225,6 @@ def run(
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
-
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='model path or triton URL')
@@ -269,7 +259,6 @@ def parse_opt():
     print_args(vars(opt))
     return opt
 
-
 def main(opt):
     check_requirements(exclude=('tensorboard', 'thop'))
     run(**vars(opt))
@@ -278,3 +267,4 @@ def main(opt):
 if __name__ == '__main__':
     opt = parse_opt()
     main(opt)
+
