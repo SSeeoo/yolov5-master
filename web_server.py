@@ -1,88 +1,81 @@
 # web_server.py
-from flask import Flask, request, jsonify, render_template
-import pymysql
-from sqlalchemy.ext.asyncio import engine
-
-from Smart_feeder import control_motor, is_time_restricted # Smart_feeder.py 파일에서 control_motor 함수를 가져옴
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from sqlalchemy import create_engine, text
+import hashlib
 import os
 import logging
-from datetime import datetime
 import plotly.express as px
 import plotly.io as pio
 import pandas as pd
 import json
-from sqlalchemy import create_engine, text
+import traceback
+import sys
+from Smart_feeder import control_motor, is_time_restricted
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# from decouple import config
+# from models import db, User
+# import pymysql
+# from sqlalchemy.ext.asyncio import AsyncSession
+# from datetime import datetime
+
+# SQLAlchemy 엔진 생성 로직을 함수로 분리
+def create_db_engine():
+    database_uri = (f"mysql+pymysql://"
+                    f"{os.getenv('DB_USER', 'root')}:"
+                    f"{os.getenv('DB_PASSWORD', '5611')}@"
+                    f"{os.getenv('DB_HOST', 'localhost')}/"
+                    f"{os.getenv('DB_NAME', 'feeder')}")
+    return create_engine(database_uri)
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'secret')  # 환경변수에서 읽어옴
+engine = create_db_engine()  # 엔진 생성
 
 # 로그 설정
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+
+
 
 @app.route('/set_interval', methods=['POST'])
 def set_interval():
-    try:
-        user_id = request.json.get('user_id')
-        interval_minutes = request.json.get('interval_minutes')
+    data = request.json
+    required_keys = ['user_id', 'interval_minutes']
 
-        # 데이터 유효성 검사
-        if user_id is None or interval_minutes is None:
-            return jsonify({'status': 'error', 'message': 'Invalid data received'}), 400
+    # 필요한 키가 누락된 경우 에러 응답
+    if not all(key in data for key in required_keys):
+        return jsonify({'status': 'error', 'message': 'Invalid data received'}), 400
 
-        # 데이터베이스에 데이터 저장
-        with pymysql.connect(
-            host=os.getenv('DB_HOST', 'localhost'),
-            user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', '5611'),
-            db=os.getenv('DB_NAME', 'feeder'),
-            charset='utf8'
-        ) as conn:
-            with conn.cursor() as cursor:
-                sql = """INSERT INTO feed_interval (user_id, interval_minutes)
-                         VALUES (%s, %s) ON DUPLICATE KEY UPDATE interval_minutes = %s"""
-                cursor.execute(sql, (user_id, interval_minutes, interval_minutes))
-                conn.commit()
+    with engine.connect() as conn:
+        sql = """INSERT INTO feed_interval (user_id, interval_minutes)
+                 VALUES (:user_id, :interval_minutes)
+                 ON DUPLICATE KEY UPDATE interval_minutes = :interval_minutes"""
+        conn.execute(text(sql), **data)  # 바인딩 된 인자를 딕셔너리로 전달
 
-        return jsonify({'status': 'success'}), 200
-    except Exception as e:
-        logging.error(f"Error: {e}")
-        return jsonify({'status': 'error', 'message': 'An error occurred'}), 500
+    return jsonify({'status': 'success'}), 200
 
 
 @app.route('/set_time_restriction', methods=['POST'])
 def set_time_restriction():
-    try:
-        user_id = request.json.get('user_id')
-        start_time = request.json.get('start_time')  # 'HH:MM:SS' 형식의 문자열로 받을 수 있습니다.
-        end_time = request.json.get('end_time')  # 'HH:MM:SS' 형식의 문자열로 받을 수 있습니다.
+    data = request.json
+    required_keys = ['user_id', 'start_time', 'end_time']
 
-        if not user_id or not start_time or not end_time:
-            return jsonify({'status': 'error', 'message': 'user_id, start_time, and end_time are required'}), 400
+    if not all(key in data for key in required_keys):
+        return jsonify({'status': 'error', 'message': 'user_id, start_time, and end_time are required'}), 400
 
-        # 받은 시간 제한을 데이터베이스에 저장
-        with pymysql.connect(
-            host=os.getenv('DB_HOST', 'localhost'),
-            user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', '5611'),
-            db=os.getenv('DB_NAME', 'feeder'),
-            charset='utf8'
-        ) as conn:
-            with conn.cursor() as cursor:
-                sql = "INSERT INTO time_restriction (user_id, start_time, end_time) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE start_time = %s, end_time = %s"
-                cursor.execute(sql, (user_id, start_time, end_time, start_time, end_time))
-                conn.commit()
+    with engine.connect() as conn:
+        sql = """INSERT INTO time_restriction (user_id, start_time, end_time) 
+                 VALUES (:user_id, :start_time, :end_time) 
+                 ON DUPLICATE KEY UPDATE start_time = :start_time, end_time = :end_time"""
+        conn.execute(text(sql), **data)
 
-        return jsonify(status='success'), 200
-    except Exception as e:
-        return jsonify(status='error', message=str(e)), 400
+    return jsonify(status='success'), 200
 
 # 웹페이지 생성을 위해 새로 추가된 코드
 # DB에서 데이터를 가져오는 함수
 def fetch_detection_data():
     try:
-        # SQLAlchemy 엔진을 만듭니다.
-        database_uri = f"mysql+pymysql://{os.getenv('DB_USER', 'root')}:{os.getenv('DB_PASSWORD', '5611')}@{os.getenv('DB_HOST', 'localhost')}/{os.getenv('DB_NAME', 'feeder')}"
-        engine = create_engine(database_uri)
-
+        # SQL 쿼리를 작성합니다.
         sql = "SELECT * FROM detection_log"
 
         # pd.read_sql을 이용하여 SQL 쿼리 결과를 DataFrame으로 읽어옵니다.
@@ -98,7 +91,7 @@ def fetch_detection_data():
         return pd.DataFrame()
 
 
-### 웹페이지 구성
+# 웹페이지 구성
 def convert_df_to_json_format(df):
     # Convert DataFrame to JSON string
     json_str = df.to_json(orient='split')
@@ -111,29 +104,89 @@ def convert_df_to_json_format(df):
 @app.route('/')
 def index():
     try:
-        # 예제로, 실제로는 DB에서 breed 리스트를 가져와야 합니다.
-        # breeds = ['dog-beagle', 'cat-Persian', ...]
-        breeds = get_all_breeds_from_db()  # 데이터베이스에서 모든 breeds를 가져옵니다.
-        graph_html = "<p>Initial Graph HTML</p>"  # 초기 그래프 HTML
-        return render_template('detection_graph.html', graph_html=graph_html, breeds=breeds)
+        breeds = get_all_breeds_from_db() # DB에서 모든 breed를 가져옵니다.
+        return render_template('login.html', breeds=breeds)
     except Exception as e:
-        print(f"Error loading index: {e}")
+        logging.error(f"Error loading index: {e}")
         return render_template('error.html', error=str(e)), 500
 
 def get_all_breeds_from_db():
-    # breeds를 저장할 리스트를 생성합니다.
-    breeds = []
     try:
-        # engine을 사용하여 데이터베이스에 연결합니다.
         with engine.connect() as connection:
-            # petbreed 테이블에서 BreedName을 선택하여 가져옵니다.
-            result = connection.execute("SELECT BreedName FROM petbreed")
-            # 결과로부터 모든 breed 이름을 리스트에 추가합니다.
+            result = connection.execute(text("SELECT BreedName FROM petbreed"))
             breeds = [row[0] for row in result]
+        return breeds
     except Exception as e:
         logging.error(f"Error fetching breeds from DB: {e}")
-    return breeds
+        return []
 
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()  # 비밀번호를 해시로 변환
+
+
+@app.route('/sign_in', methods=['POST'])
+def sign_in():
+    try:
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if not username or not password:
+            return jsonify(status='error', message='Username and Password are required'), 400
+
+        with engine.connect() as conn:
+            sql = "SELECT * FROM users WHERE username = :username"
+            result = conn.execute(text(sql), {"username": username}).fetchone()
+
+        # 사용자가 존재하고 해시 비밀번호가 일치하는지 확인합니다.
+        if result and check_password_hash(result[2], password): # result[2] : password
+            session['username'] = username  # 로그인 성공 시 세션에 username 저장
+            return redirect(url_for('dashboard'))  # 로그인 성공 시 /dashboard로 리다이렉트
+        else:
+            return jsonify(status='error', message='Invalid credentials'), 401
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        logging.error(traceback.format_exc())
+        return jsonify(status='error', message=str(e)), 400
+
+@app.route('/sign_up', methods=['POST'])
+def sign_up():
+    try:
+        username = request.form.get('username')
+        password = request.form.get('password')
+        email = request.form.get('email')
+
+        if not username or not password or not email:
+            return jsonify(status='error', message='Username, Password, and Email are required'), 400
+
+        hashed_password = generate_password_hash(password)
+
+        with engine.connect() as conn:
+            sql = "INSERT INTO users (username, password, email) VALUES (:username, :password, :email)"
+            conn.execute(text(sql), {"username": username, "password": hashed_password, "email": email})
+            conn.commit()
+
+        return jsonify(status='success', message='Sign up successful')
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        logging.error(traceback.format_exc())
+        return jsonify(status='error', message=str(e)), 400
+
+
+@app.route('/login', methods=['GET'])
+def login():
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
+
+
+@app.route('/dashboard')
+def dashboard():
+    if 'username' not in session:  # 세션에 username이 존재하지 않으면 /login으로 리다이렉트
+        return redirect(url_for('login'))
+    return render_template('dashboard.html',username=session['username'])  # username이 존재하면 dashboard.html 렌더링
 
 
 @app.route('/get_graph_data', methods=['POST'])
@@ -154,14 +207,14 @@ def get_logs_for_breeds():
     try:
         selected_breeds = request.json.get('selected_breeds', [])
 
-        # selected_breeds가 비어있지 않을 때만 로그를 가져옵니다.
         if selected_breeds:
-            with engine.connect() as connection:
-                # IN 절을 사용하여 선택된 breeds에 해당하는 로그만 가져옵니다.
-                sql = text("SELECT breed, time FROM detection_log WHERE breed IN :breeds")
-                result = connection.execute(sql, breeds=tuple(selected_breeds)).fetchall()
+            database_uri = f"mysql+pymysql://{os.getenv('DB_USER', 'root')}:{os.getenv('DB_PASSWORD', '5611')}@{os.getenv('DB_HOST', 'localhost')}/{os.getenv('DB_NAME', 'feeder')}"
+            engine = create_engine(database_uri, future=True)
 
-                # 결과를 JSON으로 변환 가능한 형태로 만듭니다.
+            with engine.connect() as conn:
+                sql = text("SELECT breed, time FROM detection_log WHERE breed IN :breeds")
+                result = conn.execute(sql, {"breeds": selected_breeds}).fetchall()
+
                 logs = [{"breed": row[0], "time": str(row[1])} for row in result]
                 return jsonify(status='success', logs=logs), 200
         else:
@@ -237,16 +290,37 @@ def feed():
 @app.route('/control_motor', methods=['POST'])
 def control_motor_endpoint():
     force = request.json.get('force', False)
+    timer = request.json.get('timer', 0)
 
+    # 시간 제한이 있는 경우와 force가 True인 경우를 확인합니다.
     if is_time_restricted(1) and not force: # user_id: 1로 임시 설정
         return {'status': 'error', 'message': 'Restricted time'}, 403
 
     # 모터 작동 로직
-    timer = request.json.get('timer', 0)
     control_motor(timer)
 
     return {'status': 'success'}, 200
 
+@app.route('/get_feed_history', methods=['GET'])
+def get_feed_history():
+    try:
+        with engine.connect() as conn:
+            sql = text("SELECT breed, time FROM detection_log")
+            result = conn.execute(sql).fetchall()
+
+            # 가져온 데이터를 JSON 형태로 변환합니다.
+            feed_history = [{"breed": row[0], "time": str(row[1])} for row in result]
+
+        return jsonify(status='success', feed_history=feed_history), 200
+
+    except Exception as e:
+        logging.error(f"Error fetching feed history: {e}")
+        return jsonify(status='error', message=str(e)), 500
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return app.send_static_file('favicon.ico')
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0',debug=True, port=5000)

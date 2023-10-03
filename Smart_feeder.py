@@ -142,7 +142,7 @@ def get_default_feed_amount(breed):
 
 def control_motor(timer):
     url = "http://192.168.0.13:80/feed"  # 수정된 부분
-    data = {'timer': timer} # 데이터를 분 단위로 처리, 앱에서 넘어오는 데이터를 1시간 => 60분으로 계산하여 처리함.
+    data = {'timer': timer} # ex) {'timer' : 5000} 5초동안 모터 동작. 1000 = 1초
     try:
         response = requests.post(url, json=data, timeout=5)  # 수정된 부분
         response.raise_for_status() # 오류코드 400 이상이면 에러

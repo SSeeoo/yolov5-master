@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="login-wrap">
+        <div class="login-html">
+            <input id="tab-1" type="radio" name="tab" class="sign-in" checked>
+            <label for="tab-1" class="tab">Sign In</label>
+            <input id="tab-2" type="radio" name="tab" class="sign-up">
+            <label for="tab-2" class="tab">Sign Up</label>
+            <div class="login-form">
+                <div class="sign-in-htm">
+                    <form id="sign-in-form">
+                        <div class="group">
+                            <label for="signin-user" class="label">Username</label>
+                            <input id="signin-user" name="username" type="text" class="input">
+                        </div>
+                        <div class="group">
+                            <label for="signin-pass" class="label">Password</label>
+                            <input id="signin-pass" name="password" type="password" class="input" data-type="password">
+                        </div>
+                        <div class="group">
+                            <input id="check" type="checkbox" class="check" checked>
+                            <label for="check"><span class="icon"></span> Keep me Signed in</label>
+                        </div>
+                        <div class="group">
+                            <input type="submit" class="button" value="Sign In" onclick="signIn(event)">
+                        </div>
+                        <div class="hr"></div>
+                        <div class="foot-lnk">
+                            <a href="#forgot">Forgot Password?</a>
+                        </div>
+                    </form>
+                </div>
+                <div class="sign-up-htm">
+                    <form id="sign-up-form">
+                        <div class="group">
+                            <label for="signup-user" class="label">Username</label>
+                            <input id="signup-user" name="username" type="text" class="input">
+                        </div>
+                        <div class="group">
+                            <label for="signup-pass" class="label">Password</label>
+                            <input id="signup-pass" name="password" type="password" class="input" data-type="password">
+                        </div>
+                        <div class="group">
+                            <label for="signup-repeat-pass" class="label">Repeat Password</label>
+                            <input id="signup-repeat-pass" name="repeat_password" type="password" class="input" data-type="password">
+                        </div>
+                        <div class="group">
+                            <label for="signup-email" class="label">Email Address</label>
+                            <input id="signup-email" name="email" type="email" class="input">
+                        </div>
+                        <div class="group">
+                            <input type="submit" class="button" value="Sign Up" onclick="signUp(event)">
+                        </div>
+                        <div class="hr"></div>
+                        <div class="foot-lnk">
+                            <a href="#tab-1">Already Member?</a>
+                        </div>
+                    </form>
+                </div>
+                <script>
+                function signIn(event) {
+                    event.preventDefault();
+                    const formData = new FormData(document.getElementById('sign-in-form'));
+                    fetch('/sign_in', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if(response.ok) {
+                            // 성공적으로 로그인하면 대시보드로 리다이렉트합니다.
+                            window.location.href = '/dashboard';
+                        } else {
+                            // 실패하면 오류 메시지를 로그에 남깁니다.
+                            console.error('Login failed:', response.statusText);
+                        }
+                    })
+                    .catch((error) => console.error('Error:', error));
+                }
+
+
+                function signUp(event) {
+                    event.preventDefault();
+                    const formData = new FormData(document.getElementById('sign-up-form'));
+
+                    // 비밀번호와 비밀번호 확인 필드를 검사합니다.
+                    const password = formData.get('password');
+                    const repeatPassword = formData.get('repeat_password');
+                    if(password !== repeatPassword) {
+                        alert('Passwords do not match');
+                        return;
+                    }
+
+                    // 비밀번호가 일치하면, 서버로 회원가입 요청을 보냅니다.
+                    fetch('/sign_up', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log(data))
+                    .catch((error) => console.error('Error:', error));
+                }
+
+                function setInterval(event) {
+                    event.preventDefault();
+                    const data = {
+                        user_id: 'userID',
+                        interval_minutes: 'intervalMinutes'
+                    };
+                    fetch('/set_interval', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log(data))
+                    .catch((error) => console.error('Error:', error));
+                }
+
+                function setTimeRestriction(event) {
+                    event.preventDefault();
+                    const data = {
+                        user_id: 'userID',
+                        start_time: 'startTime',
+                        end_time: 'endTime'
+                    };
+                    fetch('/set_time_restriction', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log(data))
+                    .catch((error) => console.error('Error:', error));
+                }
+
+                </script>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

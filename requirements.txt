@@ -7,7 +7,7 @@ matplotlib>=3.3
 numpy>=1.18.5
 opencv-python>=4.1.1
 Pillow>=7.1.2
-psutil  # system resources
+psutil~=5.9.5
 PyYAML>=5.3.1
 requests>=2.23.0
 scipy>=1.4.1
@@ -47,3 +47,9 @@ setuptools>=65.5.1 # Snyk vulnerability fix
 # albumentations>=1.0.3
 # pycocotools>=2.0.6  # COCO mAP
 # ultralytics  # HUB https://hub.ultralytics.com
+
+PyMySQL~=1.1.0
+flask~=2.3.3
+plotly~=5.17.0
+SQLAlchemy~=2.0.21
+werkzeug~=2.3.7

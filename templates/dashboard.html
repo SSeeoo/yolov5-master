@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    body {
+        background-image: url('https://example.com/your-background-image-url.jpg'); /* 이 URL을 원하는 이미지 URL로 바꾸세요 */
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color: #ffffff; /* 글자색을 변경할 수 있습니다. 이 코드는 글자색을 하얀색으로 설정합니다. */
+    }
+
+    #content-container {
+        background: rgba(0,0,0,0.6); /* 배경이 어둡게 보이도록 설정합니다. */
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+
+    .flashes {
+        padding: 10px;
+        margin-bottom: 20px;
+        background-color: #e74c3c;
+        color: #fff;
+        border-radius: 5px;
+    }
+</style>
+
+<div id="content-container">
+    <h2>Welcome, {{ username }}!</h2>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flashes">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div id="graph-container">
+        {{ graph_html|safe }}
+    </div>
+
+    <div id="table-container">
+        {{ table_html|safe }}
+    </div>
+
+    <div id="settings-container">
+        <form id="settings-form">
+            <!-- 여기에 사용자 설정 폼을 추가 -->
+        </form>
+    </div>
+</div>
+{% endblock %}
