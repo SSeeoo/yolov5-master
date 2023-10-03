@@ -160,7 +160,7 @@ def control_motor(timer):
     print(f"Success: Server responded with {response.status_code}.")
     return None
 
-DEFAULT_INTERVAL = 300  # 기본 배급 간격을 5시간(300분)으로 설정
+DEFAULT_INTERVAL = 1 # 기본 배급 간격을 1분으로 설정
 
 def main():
     try:
@@ -182,7 +182,7 @@ def main():
                 if can_proceed(detected_breed):  # 특정 시간이 경과하였는지 확인합니다.
                     interval = get_feed_interval(user_id)
                     if interval is None:
-                        interval = DEFAULT_INTERVAL  # 기본 5시간으로 설정
+                        interval = DEFAULT_INTERVAL  # 기본 1분으로 설정
 
                     if datetime.now() - last_feeding_time >= timedelta(minutes=interval):
                         if is_time_restricted(user_id):
