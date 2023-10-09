@@ -49,7 +49,7 @@ setuptools>=65.5.1 # Snyk vulnerability fix
 # ultralytics  # HUB https://hub.ultralytics.com
 
 PyMySQL~=1.1.0
-flask~=2.3.3
+flask~=3.0.0
 plotly~=5.17.0
 SQLAlchemy~=2.0.21
 werkzeug~=2.3.7
