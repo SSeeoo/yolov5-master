@@ -36,7 +36,6 @@ engine = create_db_engine()  # 엔진 생성
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
 
-
 @app.route('/set_interval', methods=['POST'])
 def set_interval():
     data = request.json
@@ -101,6 +100,22 @@ def convert_df_to_json_format(df):
 
     return json_data
 
+@app.route('/', methods=['POST'])
+def handle_post():
+    try:
+        # ESP32에서 전송하는 데이터를 받습니다.
+        temperature = request.form.get('temperature')
+        humidity = request.form.get('humidity')
+        weight = request.form.get('weight')
+
+        # 데이터를 데이터베이스나 다른 저장소에 저장하는 로직 추가
+        print(f"Temperature: {temperature}, Humidity: {humidity}, Weight: {weight}")
+
+        # 데이터 처리 후 응답을 반환합니다.
+        return "Data received", 200
+    except Exception as e:
+        return str(e), 400
+
 @app.route('/')
 def index():
     try:
@@ -122,6 +137,21 @@ def get_all_breeds_from_db():
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()  # 비밀번호를 해시로 변환
+
+@app.route('/', methods=['POST'])
+def handle_post():
+    try:
+        temperature = request.form.get('temperature')
+        humidity = request.form.get('humidity')
+        weight = request.form.get('weight')
+
+        data = SensorData(temperature=temperature, humidity=humidity, weight=weight)
+        db.session.add(data)
+        db.session.commit()
+
+        return "Data received", 200
+    except Exception as e:
+        return str(e), 400
 
 
 @app.route('/sign_in', methods=['POST'])
