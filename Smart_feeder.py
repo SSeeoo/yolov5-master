@@ -51,7 +51,7 @@ def is_time_restricted(user_id):
                 else:
                     # 설정이 없다면 기본값 사용
                     now = datetime.now()
-                    return now.hour >= 21 or now.hour < 7
+                    return now.hour >= 21 or now.hour < 4  # 21시 ~ 4시 사이에는 배급 금지
     except pymysql.MySQLError as e:
         print("ERROR: ", e)
         return False

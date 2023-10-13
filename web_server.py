@@ -12,12 +12,19 @@ import traceback
 import sys
 from Smart_feeder import control_motor, is_time_restricted
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import Column, Integer, Float, DateTime, cast
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime, timedelta
+from sqlalchemy.orm import sessionmaker
+from flask_socketio import SocketIO
 
 # from decouple import config
-# from models import db, User
+# from models import db
 # import pymysql
 # from sqlalchemy.ext.asyncio import AsyncSession
-# from datetime import datetime
+
+# Flask 앱 및 SQLAlchemy 엔진 설정
+app = Flask(__name__)
 
 # SQLAlchemy 엔진 생성 로직을 함수로 분리
 def create_db_engine():
@@ -28,13 +35,56 @@ def create_db_engine():
                     f"{os.getenv('DB_NAME', 'feeder')}")
     return create_engine(database_uri)
 
-app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'secret')  # 환경변수에서 읽어옴
 engine = create_db_engine()  # 엔진 생성
+
+Base = declarative_base()
+Base.metadata.create_all(engine) # 데이터베이스에 테이블 생성
+
+# 데이터 모델 정의
+class SensorData(Base):
+    __tablename__ = 'sensor_data'
+
+    id = Column(Integer, primary_key=True)
+    temperature = Column(Float)
+    humidity = Column(Float)
+    weight = Column(Float)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+# Socket.io 설정
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+@socketio.on('get_weight')
+def handle_weight():
+    # 여기서 데이터베이스에서 최신 무게 데이터를 가져옵니다.
+    latest_weight = SensorData.query.order_by(SensorData.timestamp).first().weight
+    socketio.emit('update_weight', {'weight': latest_weight})
 
 # 로그 설정
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
+# Flask 라우트 정의
+@app.route('/save_sensor_data', methods=['POST'])
+def save_sensor_data():
+    try:
+        # 요청으로부터 데이터를 받습니다.
+        temperature = float(request.form.get('temperature'))
+        humidity = float(request.form.get('humidity'))
+        weight = float(request.form.get('weight'))
+
+        data = SensorData(temperature=temperature, humidity=humidity, weight=weight)
+
+        # 세션 생성
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        session.add(data)
+        session.commit()
+        session.close()
+
+        return "Data saved successfully", 200
+    except Exception as e:
+        return str(e), 400
 
 @app.route('/set_interval', methods=['POST'])
 def set_interval():
@@ -103,15 +153,20 @@ def convert_df_to_json_format(df):
 @app.route('/', methods=['POST'])
 def handle_post():
     try:
-        # ESP32에서 전송하는 데이터를 받습니다.
         temperature = request.form.get('temperature')
         humidity = request.form.get('humidity')
         weight = request.form.get('weight')
 
-        # 데이터를 데이터베이스나 다른 저장소에 저장하는 로직 추가
-        print(f"Temperature: {temperature}, Humidity: {humidity}, Weight: {weight}")
+        data = SensorData(temperature=temperature, humidity=humidity, weight=weight)
 
-        # 데이터 처리 후 응답을 반환합니다.
+        # 세션 생성
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        session.add(data)
+        session.commit()
+        session.close()
+
         return "Data received", 200
     except Exception as e:
         return str(e), 400
@@ -137,22 +192,6 @@ def get_all_breeds_from_db():
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()  # 비밀번호를 해시로 변환
-
-@app.route('/', methods=['POST'])
-def handle_post():
-    try:
-        temperature = request.form.get('temperature')
-        humidity = request.form.get('humidity')
-        weight = request.form.get('weight')
-
-        data = SensorData(temperature=temperature, humidity=humidity, weight=weight)
-        db.session.add(data)
-        db.session.commit()
-
-        return "Data received", 200
-    except Exception as e:
-        return str(e), 400
-
 
 @app.route('/sign_in', methods=['POST'])
 def sign_in():
@@ -211,12 +250,40 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
 
+@app.route('/check_session')
+def check_session():
+    return f"Username in session: {session.get('username', 'Not set')}"
 
 @app.route('/dashboard')
 def dashboard():
-    if 'username' not in session:  # 세션에 username이 존재하지 않으면 /login으로 리다이렉트
-        return redirect(url_for('login'))
-    return render_template('dashboard.html',username=session['username'])  # username이 존재하면 dashboard.html 렌더링
+    # 세션에서 사용자 이름 가져오기
+    user = session.get('username', '')
+
+    try:
+        # 최근 24시간 동안의 데이터를 가져옵니다.
+        past_24_hours = datetime.now() - timedelta(days=1)
+
+        # past_24_hours의 값을 콘솔에 출력합니다. ( 테스트용 )
+        print("Value of past_24_hours:", past_24_hours)
+        print("Type of past_24_hours:", type(past_24_hours))
+
+        # SQLAlchemy 세션을 사용하여 쿼리를 수행
+        Session = sessionmaker(bind=engine)
+        db_session = Session() # 이름 중복으로 db_session으로 변경
+        sensor_data = db_session.query(SensorData).filter(SensorData.timestamp > cast(past_24_hours, DateTime)).all()
+        db_session.close()
+
+        # 데이터를 그래프에 사용할 수 있는 형식으로 변환합니다.
+        timestamps = [data.timestamp.strftime('%Y-%m-%d %H:%M:%S') for data in sensor_data]
+        temperatures = [data.temperature for data in sensor_data]
+        humidities = [data.humidity for data in sensor_data]
+        weights = [data.weight for data in sensor_data]
+
+        return render_template('dashboard.html', user=user, timestamps=timestamps, temperatures=temperatures, humidities=humidities, weights=weights)
+    except Exception as e:
+        logging.error(f"Error in /dashboard: {e}")  # 오류 메시지를 로깅합니다.
+        logging.error(traceback.format_exc())  # 트레이스백을 로깅합니다.
+        return str(e), 400
 
 
 @app.route('/get_graph_data', methods=['POST'])
@@ -322,8 +389,7 @@ def control_motor_endpoint():
     force = request.json.get('force', False)
     timer = request.json.get('timer', 0)
 
-    # 시간 제한이 있는 경우와 force가 True인 경우를 확인합니다.
-    if is_time_restricted(1) and not force: # user_id: 1로 임시 설정
+    if is_time_restricted(1) and not force:  # user_id: 1로 임시 설정
         return {'status': 'error', 'message': 'Restricted time'}, 403
 
     # 모터 작동 로직
@@ -347,10 +413,24 @@ def get_feed_history():
         logging.error(f"Error fetching feed history: {e}")
         return jsonify(status='error', message=str(e)), 500
 
-
 @app.route('/favicon.ico')
 def favicon():
     return app.send_static_file('favicon.ico')
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0',debug=True, port=5000)
+
+# Socket.io 이벤트 핸들러
+@socketio.on('connect')
+def connect():
+    print('Connected')
+
+@socketio.on('disconnect')
+def disconnect(sid):
+    print('Disconnected', sid)
+
+@socketio.on('update_weight')
+def update_weight(sid, data):
+    socketio.emit('update_weight', {'weight': data['weight']}, room=sid)
+
+# Flask 앱 실행
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
