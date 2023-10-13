@@ -40,7 +40,7 @@ var weightBarChart = new Chart(ctx2, {
 });
 
 // 실시간 무게 업데이트
-var socket = io.connect('http://localhost:5000');
+var socket = io.connect('http://ec2-3-39-230-67.ap-northeast-2.compute.amazonaws.com:5000');
 socket.on('update_weight', function(data) {
     document.getElementById('weightValue').innerText = data.weight;
 });
