@@ -51,5 +51,5 @@ setuptools>=65.5.1 # Snyk vulnerability fix
 PyMySQL~=1.1.0
 flask~=2.3.3
 plotly~=5.17.0
-SQLAlchemy~=2.0.21
+SQLAlchemy~=2.0.22
 werkzeug~=2.3.7
