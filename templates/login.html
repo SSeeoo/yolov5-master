@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <title>Login Page</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .login-wrap {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.5s;
+        }
+    </style>
 </head>
 <body>
     <div class="login-wrap">
@@ -73,8 +87,11 @@
                     })
                     .then(response => {
                         if(response.ok) {
-                            // 성공적으로 로그인하면 대시보드로 리다이렉트합니다.
-                            window.location.href = '/dashboard';
+                            // 애니메이션 효과 적용
+                            $(".login-wrap").animate({left: '-100%', opacity: '0'}, "slow", function(){
+                                // 성공적으로 로그인하면 대시보드로 리다이렉트합니다.
+                                window.location.href = '/dashboard'
+                            });
                         } else {
                             // 실패하면 오류 메시지를 로그에 남깁니다.
                             console.error('Login failed:', response.statusText);

@@ -1,12 +1,12 @@
 # Smart_feeder.py
 import subprocess
 import pymysql
-import json
 import requests
-import re
-import time
 import os
 from datetime import datetime, timedelta
+# import re
+# import time
+# import json
 
 def get_feed_interval(user_id):
     try:
@@ -90,6 +90,7 @@ def can_proceed(breed):
 
     return True
 
+
 def log_detection(breed):
     try:
         with pymysql.connect(
@@ -100,22 +101,54 @@ def log_detection(breed):
                 charset='utf8'
         ) as conn:
             with conn.cursor() as cursor:
+                # 해당 breed의 DefaultFeedAmount 값을 가져옴
+                sql_retrieve = "SELECT DefaultFeedAmount FROM petbreed WHERE BreedName = %s"
+                cursor.execute(sql_retrieve, (breed,))
+                result = cursor.fetchone()
+
+                if not result:
+                    print(f"No DefaultFeedAmount found for {breed}")
+                    return
+
+                default_feed_amount = result[0]
+
                 now = datetime.now()
 
-                # detection_log 테이블에 감지 이력 추가
-                sql_log = "INSERT INTO detection_log (breed, time) VALUES (%s, %s)"
-                cursor.execute(sql_log, (breed, now))
+                # detection_log 테이블에 breed, time, FeedAmount 값을 추가
+                sql_log = "INSERT INTO detection_log (breed, time, FeedAmount) VALUES (%s, %s, %s)"
+                cursor.execute(sql_log, (breed, now, default_feed_amount))
 
                 # last_detection 테이블에 마지막으로 감지된 시각을 업데이트 또는 삽입
                 sql_last = "INSERT INTO last_detection (breed, last_detected) VALUES (%s, %s) ON DUPLICATE KEY UPDATE last_detected = %s"
                 cursor.execute(sql_last, (breed, now, now))
 
                 conn.commit()
+
     except pymysql.MySQLError as e:
         print("ERROR: ", e)
 
+def update_default_feed_amount(breed, new_amount):
+    try:
+        with pymysql.connect(
+                host=os.getenv('DB_HOST', 'localhost'),
+                user=os.getenv('DB_USER', 'root'),
+                password=os.getenv('DB_PASSWORD', '5611'),
+                db=os.getenv('DB_NAME', 'feeder'),
+                charset='utf8'
+        ) as conn:
+            with conn.cursor() as cursor:
+                sql = "UPDATE petbreed SET DefaultFeedAmount = %s WHERE BreedName = %s"
+                cursor.execute(sql, (new_amount, breed))
+                conn.commit()
+                if cursor.rowcount > 0:
+                    print(f"Successfully updated feed amount for {breed} to {new_amount}")
+                else:
+                    print(f"Failed to update feed amount for {breed}")
+    except Exception as e:
+        print(f"Database error: {e}")
 
-def get_default_feed_amount(breed):
+
+def get_feed_amount(breed):
     try:
         # MariaDB에 연결
         with pymysql.connect(
@@ -188,7 +221,7 @@ def main():
                         if is_time_restricted(user_id):
                             print("Feeding is restricted at this time.")
                         else:
-                            default_feed_amount = get_default_feed_amount(detected_breed)
+                            default_feed_amount = get_feed_amount(detected_breed)
                             if default_feed_amount:
                                 control_motor(default_feed_amount)
                                 log_detection(detected_breed)  # 모터가 동작한 후에 감지 이력을 데이터베이스에 기록합니다.

@@ -10,7 +10,7 @@ import pandas as pd
 import json
 import traceback
 import sys
-from Smart_feeder import control_motor, is_time_restricted
+from Smart_feeder import control_motor, is_time_restricted, update_default_feed_amount
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Column, Integer, Float, DateTime, cast
 from sqlalchemy.ext.declarative import declarative_base
@@ -260,17 +260,17 @@ def dashboard():
     user = session.get('username', '')
 
     try:
-        # 최근 24시간 동안의 데이터를 가져옵니다.
-        past_24_hours = datetime.now() - timedelta(days=1)
+        # 최근 30일 동안의 데이터를 가져옵니다.
+        past_30_days = datetime.now() - timedelta(days=30)
 
-        # past_24_hours의 값을 콘솔에 출력합니다. ( 테스트용 )
-        print("Value of past_24_hours:", past_24_hours)
-        print("Type of past_24_hours:", type(past_24_hours))
+        # # past_24_hours의 값을 콘솔에 출력합니다. ( 테스트용 )
+        # print("Value of past_24_hours:", past_24_hours)
+        # print("Type of past_24_hours:", type(past_24_hours))
 
         # SQLAlchemy 세션을 사용하여 쿼리를 수행
         Session = sessionmaker(bind=engine)
-        db_session = Session() # 이름 중복으로 db_session으로 변경
-        sensor_data = db_session.query(SensorData).filter(SensorData.timestamp > cast(past_24_hours, DateTime)).all()
+        db_session = Session()
+        sensor_data = db_session.query(SensorData).filter(SensorData.timestamp > cast(past_30_days, DateTime)).all()
         db_session.close()
 
         # 데이터를 그래프에 사용할 수 있는 형식으로 변환합니다.
@@ -284,7 +284,6 @@ def dashboard():
         logging.error(f"Error in /dashboard: {e}")  # 오류 메시지를 로깅합니다.
         logging.error(traceback.format_exc())  # 트레이스백을 로깅합니다.
         return str(e), 400
-
 
 @app.route('/get_graph_data', methods=['POST'])
 def get_graph_data():
@@ -401,17 +400,73 @@ def control_motor_endpoint():
 def get_feed_history():
     try:
         with engine.connect() as conn:
-            sql = text("SELECT breed, time FROM detection_log")
+            sql = text("SELECT breed, time, FeedAmount FROM detection_log")
             result = conn.execute(sql).fetchall()
 
             # 가져온 데이터를 JSON 형태로 변환합니다.
-            feed_history = [{"breed": row[0], "time": str(row[1])} for row in result]
+            feed_history = [{"breed": row[0], "time": str(row[1]), "feedAmount": str(row[2])} for row in result]
 
         return jsonify(status='success', feed_history=feed_history), 200
 
     except Exception as e:
         logging.error(f"Error fetching feed history: {e}")
         return jsonify(status='error', message=str(e)), 500
+
+
+@app.route('/history', methods=['GET'])
+def history_page():
+    return render_template('history.html')
+
+@app.route('/environment_monitor')
+def environment_monitor():
+    return render_template('EnvironmentMonitor.html')
+
+# FeedAmount 설정 페이지
+@app.route('/control_feedamount')
+def control_feed_amount():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT BreedName, DefaultFeedAmount FROM petbreed"))
+            breeds = {row[0]: row[1] for row in result}
+        return render_template('ControlFeedAmount.html', breeds=breeds)
+    except Exception as e:
+        logging.error(f"Error loading control feed amount page: {e}")
+        return render_template('error.html', error=str(e)), 500
+
+# FeedAmount 페이지의 Update 버튼을 눌렀을 때 호출되는 함수
+@app.route('/update_feed_amount', methods=['POST'])
+def update_feed_amount():
+    try:
+        for breed, amount in request.form.items():
+            update_default_feed_amount(breed, amount)
+        return redirect(url_for('control_feed_amount'))
+    except Exception as e:
+        logging.error(f"Error updating feed amount: {e}")
+        return render_template('error.html', error=str(e)), 500
+
+# detection_log 페이지
+@app.route('/detection_log', methods=['GET', 'POST'])
+def detection_log():
+    breed_selected = None
+    if request.method == 'POST':
+        breed_selected = request.form.get('breed')
+
+    with engine.connect() as connection:
+        if breed_selected:
+            logs = connection.execute(text("SELECT breed, time, FeedAmount FROM detection_log WHERE breed = :breed"), {"breed": breed_selected}).fetchall()
+        else:
+            logs = connection.execute(text("SELECT breed, time, FeedAmount FROM detection_log")).fetchall()
+
+        breeds = connection.execute(text("SELECT DISTINCT breed FROM detection_log")).fetchall()
+
+    return render_template('DetectionLog.html', logs=logs, breeds=breeds, breed_selected=breed_selected)
+
+@app.route('/about')
+def about():
+    return render_template('About.html')
+
+
+# set_feed_amount_for_breed 삭제
 
 @app.route('/favicon.ico')
 def favicon():
@@ -424,8 +479,8 @@ def connect():
     print('Connected')
 
 @socketio.on('disconnect')
-def disconnect(sid):
-    print('Disconnected', sid)
+def disconnect():
+    print('Disconnected')
 
 @socketio.on('update_weight')
 def update_weight(sid, data):

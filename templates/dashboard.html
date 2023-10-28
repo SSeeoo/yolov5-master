@@ -2,10 +2,18 @@
 
 {% block content %}
 <style>
-    /* ... (스타일은 그대로 유지) ... */
+    /* ... (기존 스타일 그대로 유지) ... */
+    /* 추가적인 스타일은 여기에 작성 */
+
+    /* 그래프 컨테이너의 크기를 조절 */
+    #graph-container {
+        width: 1260px;   /* 너비를 조절합니다 */
+        height: 440px;  /* 높이를 조절합니다 */
+    }
 </style>
 
-<div id="content-container">
+    {% include 'navbar.html' %}
+
     <h2>Welcome, {{ user }}!</h2>
 
     {% with messages = get_flashed_messages() %}
@@ -18,11 +26,17 @@
         {% endif %}
     {% endwith %}
 
+    <!-- 실시간 정보 섹션 -->
+    <div id="realtime-info">
+        <p>온도: <span id="realtimeTemperature"></span>°C</p>
+        <p>습도: <span id="realtimeHumidity"></span>%</p>
+        <p>무게: <span id="realtimeWeight"></span>g</p>
+    </div>
+
     <!-- 꺾은선 그래프와 막대 그래프를 표시할 canvas 요소 추가 -->
     <div id="graph-container">
-        <canvas id="tempHumidityChart"></canvas>
-        <canvas id="weightBarChart"></canvas>
-        <div id="realtimeWeight">실시간 무게: <span id="weightValue"></span></div>
+        <canvas id="tempHumidityChart" width="1200" height="400"></canvas>
+        <canvas id="weightBarChart" width="1200" height="400"></canvas>
     </div>
 
     <div id="table-container">
@@ -37,12 +51,11 @@
 
     <!-- 데이터를 JavaScript로 전달하기 위한 컨테이너 -->
     <div id="dataContainer"
-        data-timestamps="{{ timestamps|tojson }}"
-        data-temperatures="{{ temperatures|tojson }}"
-        data-humidities="{{ humidities|tojson }}"
-        data-weights="{{ weights|tojson }}">
+        data-timestamps='{{ timestamps|tojson|safe }}'
+        data-temperatures='{{ temperatures|tojson|safe }}'
+        data-humidities='{{ humidities|tojson|safe }}'
+        data-weights='{{ weights|tojson|safe }}'>
     </div>
-</div>
 
 <!-- 필요한 JavaScript 라이브러리 추가 -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
