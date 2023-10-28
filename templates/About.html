@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About</title>
+    <style>
+        body {
+            text-align: center;
+        }
+
+        .strikethrough {
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+{% include 'navbar.html' %}
+<body>
+    <br>
+    <br>
+    <br>
+    <p>이 웹페이지는 Flask를 이용해서 개발되었으며</p>
+    <p>SmartFeeder 제어를 위한 웹페이지입니다.</p>
+    <br>
+    <p>AWS EC2 Public IPv4 : ec2-3-39-230-67.ap-northeast-2.compute.amazonaws.com</p>
+    <p>AWS RDS : <span class="strikethrough">AWS RDS Endpoint Information</span></p>
+</body>
+</html>

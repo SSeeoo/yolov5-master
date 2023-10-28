@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Log</title>
+    <style>
+        /* 테이블 테두리 스타일 */
+        table {
+            border-collapse: collapse;
+            width: 67%;
+            margin: 20px auto;
+        }
+        table th, table td {
+            border: 1px solid black;
+            padding: 8px;
+        }
+        label, select {
+            font-size: 1.2em;
+            padding: 5px;
+        }
+        h2 {
+            font-size: 3em;
+            text-align: center;  /* 글자를 화면 중앙에 배치 */
+        }
+        form {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+        }
+        .sort-button {
+            cursor: pointer;
+            background-color: #f2f2f2;
+            border: none;
+            margin-left: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <h2>Detection Log</h2>
+
+    <!-- 종 선택 드롭다운 -->
+    <form action="/detection_log" method="post">
+        <label for="breedSelect">Select Breed:</label> <!-- 라벨 추가 -->
+        <select name="breed" id="breedSelect" onchange="this.form.submit()">
+            <option value="">All Breeds</option>
+            {% for breed in breeds %}
+                <option value="{{ breed[0] }}" {% if breed_selected == breed[0] %}selected{% endif %}>{{ breed[0] }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <!-- border 속성 제거 -->
+    <table>
+        <thead>
+            <tr>
+                <th>Breed</th>
+                <th>
+                    Time
+                    <button class="sort-button" onclick="sortTime('asc')">▲</button>
+                    <button class="sort-button" onclick="sortTime('desc')">▼</button>
+                </th>
+                <th>Feed Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log[0] }}</td>
+                <td>{{ log[1] }}</td>
+                <td>{{ log[2] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script>
+        function sortTime(order) {
+            var table = document.querySelector("table");
+            var rows = Array.from(table.rows).slice(1);  // 헤더 제외한 모든 행을 가져옵니다.
+
+            rows.sort(function (a, b) {
+                var A = new Date(a.cells[1].innerText);
+                var B = new Date(b.cells[1].innerText);
+
+                if (order === 'asc') {
+                    return A - B;
+                } else {
+                    return B - A;
+                }
+            });
+
+            rows.forEach(function(row) {
+                table.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Feed Amount</title>
+    <style>
+        body {
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 3em;
+        }
+
+        table {
+            width: 55%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 7px 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        input[type=number] {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .update-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .update-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <h2>Control Feed Amount</h2>
+    <form action="/update_feed_amount" method="post">
+        <table>
+            <thead>
+                <tr>
+                    <th>Breed</th>
+                    <th>Default Feed Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for breed, amount in breeds.items() %}
+                <tr>
+                    <td>{{ breed }}</td>
+                    <td><input type="number" name="{{ breed }}" value="{{ amount }}"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <input class="update-button" type="submit" value="Update">
+    </form>
+    <script>
+        // 페이지가 제출되면 메시지를 표시하고, 페이지를 잠시 후에 새로고침 합니다.
+        document.querySelector('form').addEventListener('submit', function() {
+            alert("DB에 적용되었습니다.");
+            setTimeout(function() {
+                location.reload();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
