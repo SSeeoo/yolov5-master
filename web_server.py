@@ -89,6 +89,39 @@ def save_sensor_data():
     except Exception as e:
         return str(e), 400
 
+@app.route('/temperature', methods=['GET'])
+def get_temperature():
+    try:
+        # 가장 최근의 온도 값을 반환합니다.
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT temperature FROM sensor_data ORDER BY timestamp DESC LIMIT 1")).fetchone()
+            return str(result[0])
+    except Exception as e:
+        logging.error(f"Error fetching temperature: {e}")
+        return "Error", 500
+
+@app.route('/humidity', methods=['GET'])
+def get_humidity():
+    try:
+        # 가장 최근의 습도 값을 반환합니다.
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT humidity FROM sensor_data ORDER BY timestamp DESC LIMIT 1")).fetchone()
+            return str(result[0])
+    except Exception as e:
+        logging.error(f"Error fetching humidity: {e}")
+        return "Error", 500
+
+@app.route('/weight', methods=['GET'])
+def get_weight():
+    try:
+        # 가장 최근의 무게 값을 반환합니다.
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT weight FROM sensor_data ORDER BY timestamp DESC LIMIT 1")).fetchone()
+            return str(result[0])
+    except Exception as e:
+        logging.error(f"Error fetching weight: {e}")
+        return "Error", 500
+
 @app.route('/set_interval', methods=['POST'])
 def set_interval():
     data = request.json

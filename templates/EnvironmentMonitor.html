@@ -44,34 +44,38 @@
 
     <script>
         setInterval(function() {
+            // 온도 데이터 가져오기
             var xhttpTemp = new XMLHttpRequest();
             xhttpTemp.onreadystatechange = function() {
-                if (this.readyState === 4 && this.status === 200) { // === 사용
+                if (this.readyState === 4 && this.status === 200) {
                     document.getElementById("temperature").innerHTML = this.responseText;
                 }
             };
             xhttpTemp.open("GET", "/temperature", true);
             xhttpTemp.send();
 
+            // 습도 데이터 가져오기
             var xhttpHum = new XMLHttpRequest();
             xhttpHum.onreadystatechange = function() {
-                if (this.readyState === 4 && this.status === 200) { // === 사용
+                if (this.readyState === 4 && this.status === 200) {
                     document.getElementById("humidity").innerHTML = this.responseText;
                 }
             };
             xhttpHum.open("GET", "/humidity", true);
             xhttpHum.send();
+
+            // 무게 데이터 가져오기
+            var xhttpWeight = new XMLHttpRequest();
+            xhttpWeight.onreadystatechange = function() {
+                if (this.readyState === 4 && this.status === 200) {
+                    document.getElementById("weight").innerHTML = this.responseText;
+                }
+            };
+            xhttpWeight.open("GET", "/weight", true);
+            xhttpWeight.send();
+
         }, 10000);
 
-        var getWeighingResults = 0;
-        if (!!window.EventSource) {
-            var source = new EventSource('/events');
-            source.addEventListener('allDataJSON', function(e) {
-                var obj = JSON.parse(e.data);
-                getWeighingResults = obj.weight_In_g;
-                document.getElementById("weight").innerHTML = getWeighingResults;
-            }, false);
-        }
     </script>
 </body>
 </html>
