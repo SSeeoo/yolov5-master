@@ -75,6 +75,8 @@ def save_sensor_data():
         humidity = float(request.form.get('humidity'))
         weight = float(request.form.get('weight'))
 
+        logging.info(f"Received data - Temperature: {temperature}, Humidity: {humidity}, Weight: {weight}")
+
         data = SensorData(temperature=temperature, humidity=humidity, weight=weight)
 
         # 세션 생성
@@ -85,9 +87,12 @@ def save_sensor_data():
         session.commit()
         session.close()
 
+        logging.info("Data saved successfully")
         return "Data saved successfully", 200
     except Exception as e:
+        logging.error(f"Error saving data: {e}")
         return str(e), 400
+
 
 @app.route('/temperature', methods=['GET'])
 def get_temperature():
