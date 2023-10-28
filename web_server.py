@@ -27,6 +27,7 @@ from flask_socketio import SocketIO
 app = Flask(__name__)
 app.template_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app.static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:5611@localhost/feeder'
 
 # SQLAlchemy 엔진 생성 로직을 함수로 분리
 def create_db_engine():
