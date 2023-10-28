@@ -437,7 +437,7 @@ def control_motor_endpoint():
 
     return {'status': 'success'}, 200
 
-@app.route('/get_feed_history', methods=['GET'])
+@app.route('/getFeedHistory', methods=['GET'])
 def get_feed_history():
     try:
         with engine.connect() as conn:
