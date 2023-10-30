@@ -52,4 +52,4 @@ PyMySQL~=1.1.0
 flask~=2.3.3
 plotly~=5.17.0
 SQLAlchemy~=2.0.21
-werkzeug~=2.3.7
+werkzeug~=3.0.1
