@@ -250,7 +250,7 @@ def sign_in():
         # 사용자가 존재하고 해시 비밀번호가 일치하는지 확인합니다.
         if result and check_password_hash(result[2], password): # result[2] : password
             session['username'] = username  # 로그인 성공 시 세션에 username 저장
-            return redirect(url_for('dashboard'))  # 로그인 성공 시 /dashboard로 리다이렉트
+            return jsonify(status='success', message='Login successful') # 로그인 성공 시 /dashboard로 리다이렉트
         else:
             return jsonify(status='error', message='Invalid credentials'), 401
     except Exception as e:

@@ -201,7 +201,7 @@ def main():
         #아두이노에서 static ip 주소로 고정
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        user_id = 1  # 예시로 1을 사용하였으나 실제 환경에 맞게 변경하셔야 합니다.
+        user_id = 1
         last_feeding_time = datetime.now() - timedelta(hours=24)  # 초기화, 최초 실행시 24시간 전으로 설정
 
         for line in process.stdout:
