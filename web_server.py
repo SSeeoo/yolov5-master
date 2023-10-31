@@ -314,11 +314,19 @@ def dashboard():
         sensor_data = db_session.query(SensorData).filter(SensorData.timestamp > cast(past_30_days, DateTime)).all()
         db_session.close()
 
+        # 4시간 간격으로 데이터 선택
+        filtered_data = []
+        last_timestamp = None
+        for data in sensor_data:
+            if last_timestamp is None or (data.timestamp - last_timestamp).seconds >= 4 * 60 * 60:
+                filtered_data.append(data)
+                last_timestamp = data.timestamp
+
         # 데이터를 그래프에 사용할 수 있는 형식으로 변환합니다.
-        timestamps = [data.timestamp.strftime('%Y-%m-%d %H:%M:%S') for data in sensor_data]
-        temperatures = [data.temperature for data in sensor_data]
-        humidities = [data.humidity for data in sensor_data]
-        weights = [data.weight for data in sensor_data]
+        timestamps = [data.timestamp.strftime('%Y-%m-%d %H:%M:%S') for data in filtered_data]
+        temperatures = [data.temperature for data in filtered_data]
+        humidities = [data.humidity for data in filtered_data]
+        weights = [data.weight for data in filtered_data]
 
         return render_template('dashboard.html', user=user, timestamps=timestamps, temperatures=temperatures, humidities=humidities, weights=weights)
     except Exception as e:
