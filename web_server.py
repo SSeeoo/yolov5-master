@@ -127,6 +127,12 @@ def get_weight():
         logging.error(f"Error fetching weight: {e}")
         return "Error", 500
 
+# Tare 기능을 위한 라우트 추가
+@app.route('/tare', methods=['GET'])
+def tare():
+    # 아두이노에 Tare 명령을 보내는 로직 구현
+    return jsonify(status='success', message='Tare command sent'), 200
+
 @app.route('/set_interval', methods=['POST'])
 def set_interval():
     data = request.json

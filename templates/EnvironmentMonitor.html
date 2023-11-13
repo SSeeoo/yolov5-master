@@ -41,6 +41,7 @@
         <span id="weight">%WEIGHT%</span>
         <sup class="units">g</sup>
     </p>
+        <button onclick="sendTareRequest()">　Tare　</button>
 
     <script>
         setInterval(function() {
@@ -75,7 +76,17 @@
             xhttpWeight.send();
 
         }, 10000);
-
+        // Tare 요청을 보내는 함수
+        function sendTareRequest() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState === 4 && this.status === 200) {
+                    console.log('Tare request sent');
+                }
+            };
+            xhttp.open("GET", "/tare", true);
+            xhttp.send();
+        }
     </script>
 </body>
 </html>
