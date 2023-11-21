@@ -174,7 +174,7 @@ def get_feed_amount(breed):
 
 
 def control_motor(timer):
-    url = "http://3126-58-231-94-94.ngrok-free.app/feed"  # 58.231.94.94 수정된 부분
+    url = "http://3126-58-231-94-94.ngrok-free.app/feed"  # 58.231.94.94 수정된 부분 -> ngrok 주소
     data = {'timer': timer} # ex) {'timer' : 5000} 5초동안 모터 동작. 1000 = 1초
     try:
         response = requests.post(url, json=data, timeout=5)  # 수정된 부분
