@@ -121,7 +121,18 @@ def run(
     # Run inference
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
+
+    frame_interval = 1  # 프레임 처리 간격을 2초로 설정
+    last_time = time.time()
+
     for path, im, im0s, vid_cap, s in dataset:
+        current_time = time.time() # 추가된 코드
+        if current_time - last_time < frame_interval: # 추가된 코드
+            continue # 인터벌 시간이 지나지 않았으면 현재 프레임을 건너뛴다
+
+        last_time = current_time # 마지막으로 프레임을 처리한 시간을 업데이트
+
+        # 나머지 프레임 처리 코드는 이전과 동일
         with dt[0]:
             im = torch.from_numpy(im).to(model.device)
             im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32

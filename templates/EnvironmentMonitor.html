@@ -69,7 +69,7 @@
             var xhttpWeight = new XMLHttpRequest();
             xhttpWeight.onreadystatechange = function() {
                 if (this.readyState === 4 && this.status === 200) {
-                    document.getElementById("weight").innerHTML = this.responseText;
+                    document.getElementById("weight").innerHTML = this.responseText * 1000;
                 }
             };
             xhttpWeight.open("GET", "/weight", true);

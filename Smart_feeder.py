@@ -48,10 +48,13 @@ def is_time_restricted(user_id):
                     now = datetime.now().time()  # 현재 시간
                     # 현재 시간이 사용자가 설정한 시간 제한 내에 있는지 확인
                     return start_time <= now <= end_time
-                else:
-                    # 설정이 없다면 기본값 사용
-                    now = datetime.now()
-                    return now.hour >= 21 or now.hour < 4  # 21시 ~ 4시 사이에는 배급 금지
+
+                return False  # 설정이 없다면 restriction 없음
+
+                # else:
+                #     # 설정이 없다면 기본값 사용
+                #     now = datetime.now()
+                #     return now.hour >= 1 or now.hour < 2  # 오전 1시 ~ 2시 사이에는 배급 금지
     except pymysql.MySQLError as e:
         print("ERROR: ", e)
         return False
@@ -197,7 +200,7 @@ DEFAULT_INTERVAL = 1 # 기본 배급 간격을 1분으로 설정
 
 def main():
     try:
-        command = "python detect.py --weights best22.pt --img 608 --conf 0.85 --source https://062c-58-231-94-94.ngrok-free.app/stream"
+        command = "python detect.py --weights best.pt --img 608 --conf 0.85 --source https://062c-58-231-94-94.ngrok-free.app/stream"
         #아두이노에서 static ip 주소로 고정
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
@@ -215,15 +218,15 @@ def main():
                 if can_proceed(detected_breed):  # 특정 시간이 경과하였는지 확인합니다.
                     interval = get_feed_interval(user_id)
                     if interval is None:
-                        interval = DEFAULT_INTERVAL  # 기본 1분으로 설정
-
+                        interval = DEFAULT_INTERVAL # 기본 시간 간격 10초로 설정
                     if datetime.now() - last_feeding_time >= timedelta(minutes=interval):
                         if is_time_restricted(user_id):
                             print("Feeding is restricted at this time.")
                         else:
                             default_feed_amount = get_feed_amount(detected_breed)
                             if default_feed_amount:
-                                control_motor(default_feed_amount)
+                                motor_runtime = default_feed_amount * 20 # 1g당 20ms로 설정
+                                control_motor(motor_runtime)
                                 log_detection(detected_breed)  # 모터가 동작한 후에 감지 이력을 데이터베이스에 기록합니다.
                                 last_feeding_time = datetime.now()  # 마지막 피딩 시간 업데이트
                             else:
