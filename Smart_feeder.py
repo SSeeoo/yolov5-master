@@ -174,7 +174,7 @@ def get_feed_amount(breed):
 
 
 def control_motor(timer):
-    url = "http://3126-58-231-94-94.ngrok-free.app/feed"  # 58.231.94.94 수정된 부분 -> ngrok 주소
+    url = "https://c57f-58-231-94-94.ngrok-free.app/feed"  # 58.231.94.94 수정된 부분 -> ngrok 주소
     data = {'timer': timer} # ex) {'timer' : 5000} 5초동안 모터 동작. 1000 = 1초
     try:
         response = requests.post(url, json=data, timeout=5)  # 수정된 부분
@@ -197,7 +197,7 @@ DEFAULT_INTERVAL = 1 # 기본 배급 간격을 1분으로 설정
 
 def main():
     try:
-        command = "python detect.py --weights best.pt --img 608 --conf 0.85 --source http://192.168.43.74:81/stream"
+        command = "python detect.py --weights best.pt --img 608 --conf 0.85 --source https://062c-58-231-94-94.ngrok-free.app/stream"
         #아두이노에서 static ip 주소로 고정
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
