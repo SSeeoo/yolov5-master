@@ -197,7 +197,7 @@ DEFAULT_INTERVAL = 1 # 기본 배급 간격을 1분으로 설정
 
 def main():
     try:
-        command = "python detect.py --weights best.pt --img 608 --conf 0.85 --source https://062c-58-231-94-94.ngrok-free.app/stream"
+        command = "python detect.py --weights best22.pt --img 608 --conf 0.85 --source https://062c-58-231-94-94.ngrok-free.app/stream"
         #아두이노에서 static ip 주소로 고정
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
